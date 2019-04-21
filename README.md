@@ -4,7 +4,7 @@ LCD interface created with Atmel SAME70 Xplained kit
 
 ![](main_interface.jpg)
 
-### APS2 - Computção Embarcada
+### APS2 - Computação Embarcada
 
 ### Gabriel Monteiro , Hugo Carl
 
