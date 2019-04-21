@@ -2,7 +2,7 @@
 
 LCD interface created with Atmel SAME70 Xplained kit
 
-
+![](main_interface.jpg)
 
 ### APS2 - Computção Embarcada
 
