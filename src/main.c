@@ -17,13 +17,7 @@
 #include "conf_example.h"
 #include "conf_uart_serial.h"
 
-// Image struct
-typedef struct {
-	const uint8_t *data;
-	uint16_t width;
-	uint16_t height;
-	uint8_t dataSize;
-} tImage;
+
 
 // Images includes
 #include "icones/next.h"
@@ -269,7 +263,7 @@ static void mxt_init(struct mxt_device *device)
 	MXT_GEN_COMMANDPROCESSOR_T6, 0)
 	+ MXT_GEN_COMMANDPROCESSOR_CALIBRATE, 0x01);
 }
-
+int touch_counter = 0;
 void mxt_handler(struct mxt_device *device, struct botao botoes[], uint Nbotoes)
 {
 	/* USART tx buffer initialized to 0 */
@@ -299,14 +293,13 @@ void mxt_handler(struct mxt_device *device, struct botao botoes[], uint Nbotoes)
 
 		/* -----------------------------------------------------*/
 		struct botao bAtual;
-		int touch_counter = 0;
+		
 
 		if (touch_event.status == TOUCHED_STATUS){
 			if(processa_touch(botoes, &bAtual, Nbotoes, conv_x, conv_y) ){
 				printf("touch_counter %d \n\n",touch_counter);
 				if (!(bAtual.x == lock.x && bAtual.y == lock.y)){
 					bAtual.p_handler();
-					//printf("if process\n");
 				}else if((bAtual.x == lock.x && bAtual.y == lock.y)){
 					if(touch_counter == 2){
 						touch_counter = 0;
