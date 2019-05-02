@@ -357,8 +357,6 @@ void RTT_Handler(void)
 	/* Get RTT status */
 	ul_status = rtt_get_status(RTT);
 
-	/* IRQ due to Time has changed */
-	if ((ul_status & RTT_SR_RTTINC) == RTT_SR_RTTINC) {  }
 
 	/* IRQ due to Alarm */
 	if ((ul_status & RTT_SR_ALMS) == RTT_SR_ALMS) {
