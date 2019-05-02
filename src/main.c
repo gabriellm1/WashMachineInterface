@@ -1,8 +1,8 @@
-/* 
+/*
 	Wash Machine Interface by Gabriel Monteiro and Hugo Carl
 
-	APS2- Computa??o Embarcada - Insper 2019 
-	
+	APS2- Computa??o Embarcada - Insper 2019
+
 	S?o Paulo - Brasil
 
 */
@@ -51,7 +51,8 @@ typedef struct {
 #define BUT_IDX  11
 #define BUT_IDX_MASK (1 << BUT_IDX)
 
-
+// Returned status when user simple touches
+#define TOUCHED_STATUS 32
 
 // LCD ili9488 struct prototype
 struct ili9488_opt_t g_ili9488_display_opt;
@@ -71,7 +72,6 @@ struct botao {
 
 // Default variables
 int tempo;
-int touch_counter = 0;
 char sqenx[32];
 char srpm[32];
 
@@ -83,9 +83,9 @@ volatile Bool f_rtt_alarme = false;
 // Callbacks
 void prox_callback(void){
 	p_ciclo = p_ciclo->next;
-	
-	
-	
+
+
+
 	ili9488_draw_pixmap(312,
 	150,
 	64,
@@ -94,7 +94,7 @@ void prox_callback(void){
 }
 void ant_callback(void){
 	p_ciclo = p_ciclo->previous;
-	
+
 	ili9488_draw_pixmap(312,
 	150,
 	64,
@@ -124,8 +124,8 @@ void para_callback(void){
 	lavando = false;
 	f_rtt_alarme = false;
 	tela_inicial();
-	
-	
+
+
 }
 
 
@@ -162,7 +162,7 @@ static void configure_lcd(void){
 
 	/* Initialize LCD */
 	ili9488_init(&g_ili9488_display_opt);
-	
+
 
 }
 
@@ -210,7 +210,7 @@ static void mxt_init(struct mxt_device *device)
 		0x00, 0x00, 0x18, 0x18, 0x00, 0x00, 0x03,
 		0x00, 0x00
 	};
-	
+
 	/* T56 configuration object data */
 	uint8_t t56_object[] = {
 		0x02, 0x00, 0x01, 0x18, 0x1E, 0x1E, 0x1E,
@@ -284,24 +284,24 @@ void mxt_handler(struct mxt_device *device, struct botao botoes[], uint Nbotoes)
 	do {
 		/* Temporary buffer for each new touch event line */
 		char buf[STRING_LENGTH];
-		
+
 		/* Read next next touch event in the queue, discard if read fails */
 		if (mxt_read_touch_event(device, &touch_event) != STATUS_OK) {
 			continue;
 		}
-		
+
 		// eixos trocados (quando na vertical LCD)
 		uint32_t conv_x = convert_axis_system_x(touch_event.x);
 		uint32_t conv_y = convert_axis_system_y(touch_event.y);
-		
+
 		/* Format a new entry in the data string that will be sent over USART */
 		//sprintf(buf, "X:%3d Y:%3d \n", conv_x, conv_y);
-		
+
 		/* -----------------------------------------------------*/
 		struct botao bAtual;
-		int a;
-		
-		if (touch_event.status == 32){
+		int touch_counter = 0;
+
+		if (touch_event.status == TOUCHED_STATUS){
 			if(processa_touch(botoes, &bAtual, Nbotoes, conv_x, conv_y) ){
 				printf("touch_counter %d \n\n",touch_counter);
 				if (!(bAtual.x == lock.x && bAtual.y == lock.y)){
@@ -318,8 +318,6 @@ void mxt_handler(struct mxt_device *device, struct botao botoes[], uint Nbotoes)
 			}
 		}
 
-		a =touch_event.status ;
-		printf("\n %d n",a);
 
 		//update_screen(conv_x, conv_y);
 		/* -----------------------------------------------------*/
@@ -346,10 +344,10 @@ static void RTT_init(uint16_t pllPreScale, uint32_t IrqNPulses)
 	/* Configure RTT for a 1 second tick interrupt */
 	rtt_sel_source(RTT, false);
 	rtt_init(RTT, pllPreScale);
-	
+
 	ul_previous_time = rtt_read_timer_value(RTT);
 	while (ul_previous_time == rtt_read_timer_value(RTT));
-	
+
 	rtt_write_alarm_time(RTT, IrqNPulses+ul_previous_time);
 
 	/* Enable RTT interrupt */
@@ -396,40 +394,40 @@ porta_init(){
 void inicia_lavagem(void){
 	//testa a porta
 	if(!pio_get(BUT_PIO,PIO_INPUT,BUT_IDX_MASK)){
-		
+
 		lavando = false;
 		ili9488_draw_pixmap(340,
 		0,
 		64,
 		64,
 		door_open.data);
-		
+
 		ili9488_draw_string(300,72,"PORTA ABERTA");
-		
+
 		delay_s(2);
 
-		tela_inicial();		
+		tela_inicial();
 		}else{
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 			ili9488_draw_filled_rectangle(0,0,ILI9488_LCD_WIDTH,ILI9488_LCD_HEIGHT);
 
-			
+
 			ili9488_draw_pixmap(cancela.x,
 			cancela.y,
 			cancela.image->width,
 			cancela.image->height,
 			cancela.image->data);
-			
+
 			ili9488_draw_pixmap(lock.x,
 			lock.y,
 			lock.image->width,
 			lock.image->height,
 			lock.image->data);
-			
+
 			f_rtt_alarme = true;
 			tempo = (p_ciclo->enxagueTempo*p_ciclo->enxagueQnt) +
 			p_ciclo->centrifugacaoTempo ;
-		
+
 	}
 }
 
@@ -484,57 +482,57 @@ void tela_inicial(){
 	play.image->width,
 	play.image->height,
 	play.image->data);
-	
-	
+
+
 	ili9488_draw_pixmap(prox.x,
 	prox.y,
 	prox.image->width,
 	prox.image->height,
 	prox.image->data);
-	
+
 	ili9488_draw_pixmap(ant.x,
 	ant.y,
 	ant.image->width,
 	ant.image->height,
 	ant.image->data);
-	
-	
+
+
 	p_ciclo = initMenuOrder();
-	
+
 	ili9488_draw_pixmap(312,
 	150,
 	64,
 	64,
 	p_ciclo->image->data);
-	
+
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-				
+
 	sprintf(sqenx,"%d",p_ciclo->enxagueQnt);
 	sprintf(srpm,"%d",p_ciclo->centrifugacaoRPM);
 	ili9488_draw_string(272,260,p_ciclo->nome);
 	ili9488_draw_string(100,40,sqenx);
 	ili9488_draw_string(100,140,srpm);
-				
+
 	if (p_ciclo->bubblesOn){
 		ili9488_draw_string(100,260,"ON");
 		}else{
 		ili9488_draw_string(100,260,"OFF");
 	}
-	
+
 }
 
 
 int main(void)
 {
-	
+
 
 	// Avaiable buttons struct vector
 	struct botao botoes_inicial[] = {lock,ant, prox,play};
-	
+
 	struct botao botoes_lavando[] = {lock,cancela};
-		
-		
-	
+
+
+
 	struct mxt_device device; /* Device data container */
 
 	/* Initialize the USART configuration struct */
@@ -552,92 +550,86 @@ int main(void)
 	//draw_button(0);
 	/* Initialize the mXT touch device */
 	mxt_init(&device);
-	
+
 	/* Initialize stdio on USART */
 	stdio_serial_init(USART_SERIAL_EXAMPLE, &usart_serial_options);
-	
+
 	tela_inicial();
-	
-	char ciclo[32];
+
 	char temp[32];
 	sprintf(temp,"%d",0);
-	
-	porta_init(); 
 
-	
+	porta_init();
+
+
 	while (true) {
 		if (blocked){
-			lock.image = &locked;
-			ili9488_draw_pixmap(lock.x,
-			lock.y,
-			lock.image->width,
-			lock.image->height,
-			lock.image->data);
-		}else{
-			lock.image = &unlocked; 
-			ili9488_draw_pixmap(lock.x,
-			lock.y,
-			lock.image->width,
-			lock.image->height,
-			lock.image->data);
-		}
+					lock.image = &locked;
+				}else{
+					lock.image = &unlocked;
+				}
+					ili9488_draw_pixmap(lock.x,
+					lock.y,
+					lock.image->width,
+					lock.image->height,
+					lock.image->data);
 		/* Check for any pending messages and run message handler if any
 		* message is found in the queue */
 		if (mxt_is_message_pending(&device)) {
 			if (!lavando && !blocked){
 				mxt_handler(&device, botoes_inicial, 4);
-				
+
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 				ili9488_draw_filled_rectangle(272,260,400,320);
 				ili9488_draw_filled_rectangle(100,40,130,70);
 				ili9488_draw_filled_rectangle(100,140,170,170);
 				ili9488_draw_filled_rectangle(100,260,145,290);
-				
-				
+
+
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-				
+
 				sprintf(sqenx,"%d",p_ciclo->enxagueQnt);
 				sprintf(srpm,"%d",p_ciclo->centrifugacaoRPM);
 				ili9488_draw_string(272,260,p_ciclo->nome);
 				ili9488_draw_string(100,40,sqenx);
 				ili9488_draw_string(100,140,srpm);
-		
+
 				if (p_ciclo->bubblesOn){
 					ili9488_draw_string(100,260,"ON");
 				}else{
 					ili9488_draw_string(100,260,"OFF");
 				}
-				
+
 			}else if(lavando && !blocked){
 				mxt_handler(&device, botoes_lavando, 2);
-				
+
 			} else{
 				mxt_handler(&device, botoes_lavando, 1);
 			}
 		}
-		
+
 		// RTT usage
 		if (f_rtt_alarme && lavando){
-			
+
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 			ili9488_draw_filled_rectangle(272,260,400,320);
 			ili9488_draw_filled_rectangle(100,40,130,70);
 			ili9488_draw_filled_rectangle(100,140,170,170);
 			ili9488_draw_filled_rectangle(100,260,145,290);
-			
+
 			uint16_t pllPreScale = (int) (((float) 32768) / 1.0);
 			uint32_t irqRTTvalue  = 60;
-			
+
 			// reboot RTT to generate new IRQ
 			RTT_init(pllPreScale, irqRTTvalue);
-			
-				
+
+
 			/*
 			* CLEAR FLAG
 			*/
 			f_rtt_alarme = false;
-			
-			
+
+
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 
 			ili9488_draw_string(230, 120, temp);
@@ -645,18 +637,18 @@ int main(void)
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 			sprintf(temp,"%d",tempo);
 			ili9488_draw_string(230, 120, temp);
-			
+
 			uint8_t palavra[256];
 			sprintf(palavra,"Faltam :");
 			ili9488_draw_string(130, 120, palavra);
-			
+
 			uint8_t min[256];
 			sprintf(min,"minutos");
 			ili9488_draw_string(280, 120, min);
-			
+
 			tempo-=1;
 		}
-		
+
 	}
 
 	return 0;
