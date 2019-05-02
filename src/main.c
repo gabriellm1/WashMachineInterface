@@ -66,8 +66,8 @@ struct botao {
 
 // Default variables
 int tempo;
-char sqenx[32];
-char srpm[32];
+char buffer[32];
+
 
 // Flags
 volatile Bool lavando;
@@ -500,11 +500,11 @@ void tela_inicial(){
 
 	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 
-	sprintf(sqenx,"%d",p_ciclo->enxagueQnt);
-	sprintf(srpm,"%d",p_ciclo->centrifugacaoRPM);
 	ili9488_draw_string(272,260,p_ciclo->nome);
-	ili9488_draw_string(100,40,sqenx);
-	ili9488_draw_string(100,140,srpm);
+	sprintf(buffer,"%d",p_ciclo->enxagueQnt);
+	ili9488_draw_string(100,40,buffer);
+	sprintf(buffer,"%d",p_ciclo->centrifugacaoRPM);
+	ili9488_draw_string(100,140,buffer);
 
 	if (p_ciclo->bubblesOn){
 		ili9488_draw_string(100,260,"ON");
@@ -580,12 +580,12 @@ int main(void)
 
 
 				ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-
-				sprintf(sqenx,"%d",p_ciclo->enxagueQnt);
-				sprintf(srpm,"%d",p_ciclo->centrifugacaoRPM);
+				
 				ili9488_draw_string(272,260,p_ciclo->nome);
-				ili9488_draw_string(100,40,sqenx);
-				ili9488_draw_string(100,140,srpm);
+				sprintf(buffer,"%d",p_ciclo->enxagueQnt);
+				ili9488_draw_string(100,40,buffer);
+				sprintf(buffer,"%d",p_ciclo->centrifugacaoRPM);
+				ili9488_draw_string(100,140,buffer);
 
 				if (p_ciclo->bubblesOn){
 					ili9488_draw_string(100,260,"ON");
