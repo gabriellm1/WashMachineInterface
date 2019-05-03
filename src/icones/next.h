@@ -16,15 +16,11 @@
 *  inverse: no
 *******************************************************************************/
 
+#ifndef NEXT_H
+#define NEXT_H
 
-
-// Image struct
-typedef struct {
-	const uint8_t *data;
-	uint16_t width;
-	uint16_t height;
-	uint8_t dataSize;
-} tImage;
+#include "asf.h"
+#include "tipos.h"
 
 
 static const uint8_t image_data_next[12288] = {
@@ -96,3 +92,5 @@ static const uint8_t image_data_next[12288] = {
 const tImage next = { image_data_next, 64, 64,
     8 };
 
+
+#endif

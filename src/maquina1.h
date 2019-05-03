@@ -1,28 +1,15 @@
-#ifndef MAQUINA1
-#define MAQUINA1
+#ifndef MAQUINA1_H
+#define MAQUINA1_H
 
+#include "icones/next.h"
 
 #include "icones/diario.h"
 #include "icones/fast.h"
 #include "icones/centrifuge.h"
 #include "icones/pesado.h"
 #include "icones/enxague.h"
+#include "tipos.h"
 
-
-typedef struct ciclo t_ciclo;
-
-struct ciclo{
-  char nome[32];           // nome do ciclo, para ser exibido
-  int  enxagueTempo;       // tempo que fica em cada enxague
-  int  enxagueQnt;         // quantidade de enxagues
-  int  centrifugacaoRPM;   // velocidade da centrifugacao
-  int  centrifugacaoTempo; // tempo que centrifuga
-  char heavy;              // modo pesado de lavagem
-  char bubblesOn;          // smart bubbles on (???)
-  tImage *image;           // imagem do cilco
-  t_ciclo *previous;
-  t_ciclo *next;
-};
 
 t_ciclo c_rapido = {.nome = "Rapido",
                     .enxagueTempo = 5,

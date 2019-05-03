@@ -6,6 +6,8 @@ src\ASF\sam\drivers\rtt\rtt.c
 
 src\ASF\sam\drivers\tc\tc.c
 
+src\gui.c
+
 src\ASF\common\components\touch\mxt\mxt_device_1.c
 
 src\ASF\common\services\clock\same70\sysclk.c

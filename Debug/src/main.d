@@ -182,13 +182,13 @@ src/main.d src/main.o: ../src/main.c ../src/asf.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-none-eabi\include\string.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-none-eabi\include\xlocale.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-none-eabi\include\sys\string.h \
- ../src/config/conf_board.h ../src/config/conf_example.h \
- ../src/icones/next.h ../src/icones/back.h ../src/icones/locked.h \
- ../src/icones/unlocked.h ../src/icones/play_butt.h ../src/icones/para.h \
- ../src/icones/door_open.h ../src/icones/laundry.h ../src/icones/rpm.h \
- ../src/icones/bubble.h ../src/maquina1.h ../src/icones/diario.h \
- ../src/icones/fast.h ../src/icones/centrifuge.h ../src/icones/pesado.h \
- ../src/icones/enxague.h
+ ../src/config/conf_board.h ../src/config/conf_example.h ../src/tipos.h \
+ ../src/asf.h ../src/icones/next.h ../src/tipos.h ../src/icones/back.h \
+ ../src/icones/locked.h ../src/icones/unlocked.h \
+ ../src/icones/play_butt.h ../src/icones/para.h ../src/icones/laundry.h \
+ ../src/icones/rpm.h ../src/icones/bubble.h ../src/maquina1.h \
+ ../src/icones/diario.h ../src/icones/fast.h ../src/icones/centrifuge.h \
+ ../src/icones/pesado.h ../src/icones/enxague.h ../src/gui.h
 
 ../src/asf.h:
 
@@ -580,7 +580,13 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 
 ../src/config/conf_example.h:
 
+../src/tipos.h:
+
+../src/asf.h:
+
 ../src/icones/next.h:
+
+../src/tipos.h:
 
 ../src/icones/back.h:
 
@@ -591,8 +597,6 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/icones/play_butt.h:
 
 ../src/icones/para.h:
-
-../src/icones/door_open.h:
 
 ../src/icones/laundry.h:
 
@@ -611,3 +615,5 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 ../src/icones/pesado.h:
 
 ../src/icones/enxague.h:
+
+../src/gui.h:

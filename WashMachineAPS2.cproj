@@ -703,6 +703,9 @@
     <Folder Include="src\icones\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\tipos.h">
+      <SubType>compile</SubType>
+    </Compile>
     <None Include="src\ASF\sam\drivers\rtt\rtt.h">
       <SubType>compile</SubType>
     </None>
@@ -718,6 +721,12 @@
     <None Include="src\ASF\sam\drivers\tc\tc_capture_waveform_example\tc_capture_waveform_example.h">
       <SubType>compile</SubType>
     </None>
+    <Compile Include="src\gui.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\gui.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\icones\bubble.h">
       <SubType>compile</SubType>
     </Compile>
