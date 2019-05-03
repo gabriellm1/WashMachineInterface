@@ -71,6 +71,6 @@ void draw_porta_warning(){
 	64,
 	64,
 	door_open.data);
-
+	ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
 	ili9488_draw_string(300,72,"PORTA ABERTA");
 }

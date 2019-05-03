@@ -75,6 +75,7 @@ char buffer[32];
 volatile Bool lavando;
 volatile Bool blocked;
 volatile Bool f_rtt_alarme = false;
+volatile Bool interrompe;
 
 // Callbacks
 void prox_callback(void){
@@ -107,8 +108,15 @@ void para_callback(void){
 	lavando = false;
 	f_rtt_alarme = false;
 	tela_inicial();
+}
 
-
+void interrompe_lavagem();
+void opened_door_callback(){
+	if (lavando){
+		lavando = false;
+		f_rtt_alarme = false;
+		interrompe = true;
+	}
 }
 
 
@@ -368,6 +376,22 @@ porta_init(){
 	// fun??o de callback caso uma interrup??o for gerada
 	// a fun??o de callback ? a: but_callback()
 	pio_set_debounce_filter(BUT_PIO,BUT_IDX_MASK,20);
+	
+		// Ativa interrup??o
+		pio_enable_interrupt(BUT_PIO, BUT_IDX_MASK);
+
+
+
+		// Configura NVIC para receber interrupcoes do PIO do botao
+		// com prioridade 1 (quanto mais pr?ximo de 0 maior)
+		NVIC_EnableIRQ(BUT_PIO_ID);
+		NVIC_SetPriority(BUT_PIO_ID, 1); // Prioridade 1
+
+		pio_handler_set(BUT_PIO,
+		BUT_PIO_ID,
+		BUT_IDX_MASK,
+		PIO_IT_FALL_EDGE,
+		opened_door_callback);
 }
 
 // Start wash function
@@ -461,6 +485,19 @@ void tela_inicial(){
 
 }
 
+void interrompe_lavagem(){
+		
+		interrompe = false;
+		
+		//tela_inicial();
+		
+		draw_porta_warning();
+
+		delay_s(2);
+		
+		tela_inicial();
+}
+	
 
 int main(void)
 {
@@ -501,20 +538,26 @@ int main(void)
 
 	porta_init();
 
-
+	
 	while (true) {
 		if (blocked){
-					lock.image = &locked;
-				}else{
-					lock.image = &unlocked;
-				}
-					ili9488_draw_pixmap(lock.x,
-					lock.y,
-					lock.image->width,
-					lock.image->height,
-					lock.image->data);
+			lock.image = &locked;
+		}else{
+			lock.image = &unlocked;
+		}
+				
+		ili9488_draw_pixmap(lock.x,
+			lock.y,
+			lock.image->width,
+			lock.image->height,
+			lock.image->data);
 		/* Check for any pending messages and run message handler if any
 		* message is found in the queue */
+		if (interrompe)
+				{
+					interrompe_lavagem();
+				}
+		
 		if (mxt_is_message_pending(&device)) {
 			if (!lavando && !blocked){
 				mxt_handler(&device, botoes_inicial, 4);
@@ -523,7 +566,8 @@ int main(void)
 
 			}else if(lavando && !blocked){
 				mxt_handler(&device, botoes_lavando, 2);
-
+				
+				
 			} else{
 				mxt_handler(&device, botoes_lavando, 1);
 			}
@@ -533,10 +577,13 @@ int main(void)
 		if (f_rtt_alarme && lavando){
 
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
+			ili9488_draw_filled_rectangle(312,150,376,214);
 			ili9488_draw_filled_rectangle(272,260,400,320);
 			ili9488_draw_filled_rectangle(100,40,130,70);
 			ili9488_draw_filled_rectangle(100,140,170,170);
 			ili9488_draw_filled_rectangle(100,260,145,290);
+			
+
 
 			uint16_t pllPreScale = (int) (((float) 32768) / 1.0);
 			uint32_t irqRTTvalue  = 60;
