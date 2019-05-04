@@ -16,6 +16,7 @@
 #include "conf_board.h"
 #include "conf_example.h"
 #include "conf_uart_serial.h"
+#include <time.h>
 
 #include "tipos.h"
 
@@ -69,6 +70,7 @@ struct botao {
 // Default variables
 int tempo;
 char buffer[32];
+int touch_counter = 0;
 
 
 // Flags
@@ -156,6 +158,53 @@ static void configure_lcd(void){
 
 
 }
+
+
+void TC1_Handler(void){
+	volatile uint32_t ul_dummy;
+
+	/****************************************************************
+	* Devemos indicar ao TC que a interrupção foi satisfeita.
+	******************************************************************/
+	ul_dummy = tc_get_status(TC0, 1);
+
+	touch_counter = 0;
+	
+	/* Avoid compiler warning */
+	UNUSED(ul_dummy);
+	
+	tc_stop(TC0, 1);
+
+}
+
+void TC_init(Tc * TC, int ID_TC, int TC_CHANNEL, int freq){
+	uint32_t ul_div;
+	uint32_t ul_tcclks;
+	uint32_t ul_sysclk = sysclk_get_cpu_hz();
+
+	uint32_t channel = 1;
+
+	/* Configura o PMC */
+	/* O TimerCounter é meio confuso
+	o uC possui 3 TCs, cada TC possui 3 canais
+	TC0 : ID_TC0, ID_TC1, ID_TC2
+	TC1 : ID_TC3, ID_TC4, ID_TC5
+	TC2 : ID_TC6, ID_TC7, ID_TC8
+	*/
+	pmc_enable_periph_clk(ID_TC);
+
+	/** Configura o TC para operar em  4Mhz e interrupçcão no RC compare */
+	tc_find_mck_divisor(freq, ul_sysclk, &ul_div, &ul_tcclks, ul_sysclk);
+	tc_init(TC, TC_CHANNEL, ul_tcclks | TC_CMR_CPCTRG);
+	tc_write_rc(TC, TC_CHANNEL, (ul_sysclk / ul_div) / freq);
+
+	/* Configura e ativa interrupçcão no TC canal 0 */
+	/* Interrupção no C */
+	NVIC_EnableIRQ((IRQn_Type) ID_TC);
+	tc_enable_interrupt(TC, TC_CHANNEL, TC_IER_CPCS);
+
+}
+
 
 // Convertion of axis
 uint32_t convert_axis_system_x(uint32_t touch_y) {
@@ -260,7 +309,7 @@ static void mxt_init(struct mxt_device *device)
 	MXT_GEN_COMMANDPROCESSOR_T6, 0)
 	+ MXT_GEN_COMMANDPROCESSOR_CALIBRATE, 0x01);
 }
-int touch_counter = 0;
+
 void mxt_handler(struct mxt_device *device, struct botao botoes[], uint Nbotoes)
 {
 	/* USART tx buffer initialized to 0 */
@@ -290,6 +339,7 @@ void mxt_handler(struct mxt_device *device, struct botao botoes[], uint Nbotoes)
 
 		/* -----------------------------------------------------*/
 		struct botao bAtual;
+
 		
 
 		if (touch_event.status == TOUCHED_STATUS){
@@ -302,7 +352,16 @@ void mxt_handler(struct mxt_device *device, struct botao botoes[], uint Nbotoes)
 						touch_counter = 0;
 						bAtual.p_handler();
 					}else{
-						touch_counter ++;
+						if (touch_counter==0){
+							touch_counter++;
+							tc_start(TC0, 1);
+						}
+						else{
+							// fazer stop
+							tc_stop(TC0, 1);
+							touch_counter++;
+							tc_start(TC0, 1);
+						}
 					}
 				}
 			}
@@ -365,6 +424,13 @@ void RTT_Handler(void)
 static float get_time_rtt(){
 	uint ul_previous_time = rtt_read_timer_value(RTT);
 }
+void RTT_reboot(){
+	uint16_t pllPreScale = (int) (((float) 32768) / 1.0);
+	uint32_t irqRTTvalue  = 60;
+
+	// reboot RTT to generate new IRQ
+	RTT_init(pllPreScale, irqRTTvalue);
+}
 
 // Door sensor initialization
 porta_init(){
@@ -409,7 +475,7 @@ void inicia_lavagem(void){
 		}else{
 			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
 			ili9488_draw_filled_rectangle(0,0,ILI9488_LCD_WIDTH,ILI9488_LCD_HEIGHT);
-
+			
 			
 			ili9488_draw_pixmap(cancela.x,
 			cancela.y,
@@ -501,14 +567,10 @@ void interrompe_lavagem(){
 
 int main(void)
 {
-
-
 	// Avaiable buttons struct vector
 	struct botao botoes_inicial[] = {lock,ant, prox,play};
 
 	struct botao botoes_lavando[] = {lock,cancela};
-
-
 
 	struct mxt_device device; /* Device data container */
 
@@ -533,13 +595,14 @@ int main(void)
 
 	tela_inicial();
 
-	char temp[32];
-	sprintf(temp,"%d",0);
-
 	porta_init();
 
+	/** Configura timer TC0, canal 1 */
+	TC_init(TC0, ID_TC1, 1, 1);
 	
 	while (true) {
+		
+		//checagem de bloqueio de tela
 		if (blocked){
 			lock.image = &locked;
 		}else{
@@ -551,18 +614,19 @@ int main(void)
 			lock.image->width,
 			lock.image->height,
 			lock.image->data);
-		/* Check for any pending messages and run message handler if any
-		* message is found in the queue */
+
+		// caso porta seja aberta durante a lavagem
 		if (interrompe)
 				{
 					interrompe_lavagem();
 				}
 		
+		//processamento dos botoes dependendo do estado da maquina
 		if (mxt_is_message_pending(&device)) {
 			if (!lavando && !blocked){
 				mxt_handler(&device, botoes_inicial, 4);
 
-			draw_ciclo(p_ciclo,buffer);
+				draw_ciclo(p_ciclo,buffer);
 
 			}else if(lavando && !blocked){
 				mxt_handler(&device, botoes_lavando, 2);
@@ -573,46 +637,16 @@ int main(void)
 			}
 		}
 
-		// RTT usage
+		// RTT para lavagem
 		if (f_rtt_alarme && lavando){
-
-			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
-			ili9488_draw_filled_rectangle(312,150,376,214);
-			ili9488_draw_filled_rectangle(272,260,400,320);
-			ili9488_draw_filled_rectangle(100,40,130,70);
-			ili9488_draw_filled_rectangle(100,140,170,170);
-			ili9488_draw_filled_rectangle(100,260,145,290);
 			
+			clear_for_lavagem();
 
+			RTT_reboot();
 
-			uint16_t pllPreScale = (int) (((float) 32768) / 1.0);
-			uint32_t irqRTTvalue  = 60;
+			draw_lavagem(tempo);
 
-			// reboot RTT to generate new IRQ
-			RTT_init(pllPreScale, irqRTTvalue);
-
-
-			/*
-			* CLEAR FLAG
-			*/
 			f_rtt_alarme = false;
-
-
-			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_WHITE));
-
-			ili9488_draw_string(230, 120, temp);
-
-			ili9488_set_foreground_color(COLOR_CONVERT(COLOR_BLACK));
-			sprintf(temp,"%d",tempo);
-			ili9488_draw_string(230, 120, temp);
-
-			uint8_t palavra[256];
-			sprintf(palavra,"Faltam :");
-			ili9488_draw_string(130, 120, palavra);
-
-			uint8_t min[256];
-			sprintf(min,"minutos");
-			ili9488_draw_string(280, 120, min);
 
 			tempo-=1;
 		}
@@ -621,3 +655,5 @@ int main(void)
 
 	return 0;
 }
+
+
